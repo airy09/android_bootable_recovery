@@ -43,6 +43,7 @@
 #include "mtdutils/mtdutils.h"
 #include "bmlutils/bmlutils.h"
 
+#define ABS_MT_POSITION_X 0x35  /* Center X ellipse position */
 
 int signature_check_enabled = 1;
 int script_assert_enabled = 1;
@@ -411,30 +412,21 @@ int confirm_selection(const char* title, const char* confirm)
         return 1;
 
     char* confirm_headers[]  = {  title, "  THIS CAN NOT BE UNDONE.", "", NULL };
-	if (0 == stat("/sdcard/clockworkmod/.one_confirm", &info)) {
-		char* items[] = { "No",
-						confirm, //" Yes -- wipe partition",   // [1]
-						NULL };
-		int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
-		return chosen_item == 1;
-	}
-	else {
-		char* items[] = { "No",
-						"No",
-						"No",
-						"No",
-						"No",
-						"No",
-						"No",
-						confirm, //" Yes -- wipe partition",   // [7]
-						"No",
-						"No",
-						"No",
-						NULL };
-		int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
-		return chosen_item == 7;
-	}
-	}
+    if (0 == stat("/sdcard/clockworkmod/.one_confirm", &info)) {
+   char* items[] = { "No",
+            confirm, //" Yes -- wipe partition",   // [1]
+            NULL };
+    int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
+    return chosen_item == 1;
+  }
+  else {
+    char* items[] = { "No",
+            confirm, //" Yes -- wipe partition",   // [1]
+            NULL };
+    int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
+    return chosen_item == 1;
+  }
+  }
 
 #define MKE2FS_BIN      "/sbin/mke2fs"
 #define TUNE2FS_BIN     "/sbin/tune2fs"
@@ -833,6 +825,8 @@ void show_nandroid_menu()
     {
         case 0:
             {
+            	if (confirm_selection("Confirm BACKUP?", "Yes - Start Backup NOW!"))
+               {
                 char backup_path[PATH_MAX];
                 time_t t = time(NULL);
                 struct tm *tmp = localtime(&t);
@@ -847,6 +841,7 @@ void show_nandroid_menu()
                     strftime(backup_path, sizeof(backup_path), "/sdcard/clockworkmod/backup/%F.%H.%M.%S", tmp);
                 }
                 nandroid_backup(backup_path);
+                }
             }
             break;
         case 1:
@@ -903,13 +898,12 @@ void show_advanced_menu()
                             "Report Error",
                             "Key Test",
                             "Show log",
-#ifndef BOARD_HAS_SMALL_RECOVERY
                             "Partition SD Card",
                             "Fix Permissions",
 #ifdef BOARD_HAS_SDCARD_INTERNAL
                             "Partition Internal SD Card",
 #endif
-#endif
+
                             NULL
     };
 
@@ -953,13 +947,25 @@ void show_advanced_menu()
             {
                 ui_print("Outputting key codes.\n");
                 ui_print("Go back to end debugging.\n");
-                int key;
+                struct keyStruct{
+					int code;
+					int x;
+					int y;
+				}*key;
                 int action;
                 do
                 {
                     key = ui_wait_key();
-                    action = device_handle_key(key, 1);
-                    ui_print("Key: %d\n", key);
+					if(key->code == ABS_MT_POSITION_X)
+					{
+				        action = device_handle_mouse(key, 1);
+						ui_print("Touch: X: %d\tY: %d\n", key->x, key->y);
+					}
+					else
+					{
+				        action = device_handle_key(key->code, 1);
+						ui_print("Key: %x\n", key->code);
+					}
                 }
                 while (action != GO_BACK);
                 break;
@@ -971,6 +977,9 @@ void show_advanced_menu()
             }
             case 6:
             {
+            	if (confirm_selection("Confirm: SDCARD will be wiped!!", "Yes - Continue with SDCARD Partitioning"))
+                {
+
                 static char* ext_sizes[] = { "128M",
                                              "256M",
                                              "512M",
@@ -978,6 +987,11 @@ void show_advanced_menu()
                                              "2048M",
                                              "4096M",
                                              NULL };
+		
+		static char* ext_fs[] = { "ext2",
+                                          "ext3",
+                                          "ext4",
+                                          NULL };
 
                 static char* swap_sizes[] = { "0M",
                                               "32M",
@@ -987,10 +1001,15 @@ void show_advanced_menu()
                                               NULL };
 
                 static char* ext_headers[] = { "Ext Size", "", NULL };
+                static char* ext_fs_headers[] = { "Ext File System", "", NULL };
                 static char* swap_headers[] = { "Swap Size", "", NULL };
 
                 int ext_size = get_menu_selection(ext_headers, ext_sizes, 0, 0);
                 if (ext_size == GO_BACK)
+                    continue;
+                    
+                int ext_fs_selected = get_menu_selection(ext_fs_headers, ext_fs, 0, 0);
+                if (ext_fs_selected == GO_BACK)
                     continue;
 
                 int swap_size = get_menu_selection(swap_headers, swap_sizes, 0, 0);
@@ -1004,12 +1023,15 @@ void show_advanced_menu()
                 sddevice[strlen("/dev/block/mmcblkX")] = NULL;
                 char cmd[PATH_MAX];
                 setenv("SDPATH", sddevice, 1);
-                sprintf(cmd, "sdparted -es %s -ss %s -efs ext3 -s", ext_sizes[ext_size], swap_sizes[swap_size]);
+                sprintf(cmd, "sdparted -es %s -ss %s -efs %s -s", ext_sizes[ext_size], swap_sizes[swap_size], ext_fs[ext_fs_selected]);
                 ui_print("Partitioning SD Card... please wait...\n");
                 if (0 == __system(cmd))
                     ui_print("Done!\n");
                 else
                     ui_print("An error occured while partitioning your SD Card. Please see /tmp/recovery.log for more details.\n");
+                    
+                }
+                
                 break;
             }
             case 7:

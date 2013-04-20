@@ -185,12 +185,11 @@ int format_rfs_device (const char *device, const char *path) {
         sectorsize = "1";
     } 
 
-    // dump 10KB of zeros to partition before format due to fat.format bug
     char cmd[PATH_MAX];
 
     sprintf(cmd, "/sbin/dd if=/dev/zero of=%s bs=4096 count=10", device);
     if(__system(cmd)) {
-        printf("failure while zeroing rfs partition.\n");
+       printf("failure while zeroing rfs partition.\n");
         return -1;
     }
 

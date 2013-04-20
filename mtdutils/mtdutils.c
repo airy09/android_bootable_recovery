@@ -406,7 +406,7 @@ static int write_block(MtdWriteContext *ctx, const char *data)
     if (pos == (off_t) -1) return 1;
 
     ssize_t size = partition->erase_size;
-
+    
     char *verify = malloc(size);
     if (verify == NULL)
         return 1;
@@ -466,7 +466,7 @@ static int write_block(MtdWriteContext *ctx, const char *data)
         pos += partition->erase_size;
     }
 
-    free(verify);
+ 	free(verify);
 
     // Ran out of space on the device
     errno = ENOSPC;
