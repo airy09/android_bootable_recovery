@@ -428,112 +428,10 @@ copy_sideloaded_package(const char* original_path) {
   return strdup(copy_path);
 }
 
-int get_battery_temp(void)
-{
-    static int lastValt = -1;
-    static time_t nextSecChecks = 0;
-
-    struct timeval curTime;
-    gettimeofday(&curTime, NULL);
-    if (curTime.tv_sec > nextSecChecks)
-    {
-        char ft_s[3];
-        FILE * ft = fopen("/sys/class/power_supply/battery/temp","rt");
-        if (ft)
-        {
-            fgets(ft_s, 3, ft);
-            fclose(ft);
-            lastValt = atoi(ft_s);
-        }
-        nextSecChecks = curTime.tv_sec + 10;
-    }
-    return lastValt;
-}
-
-
-int get_battery_level(void)
-{
-    static int lastVal = -1;
-    static time_t nextSecCheck = 0;
-
-    struct timeval curTime;
-    gettimeofday(&curTime, NULL);
-    if (curTime.tv_sec > nextSecCheck)
-    {
-        char cap_s[4];
-        FILE * cap = fopen("/sys/class/power_supply/battery/capacity","rt");
-        if (cap)
-        {
-            fgets(cap_s, 4, cap);
-            fclose(cap);
-            lastVal = atoi(cap_s);
-            if (lastVal > 100)  lastVal = 100;
-            if (lastVal < 0)    lastVal = 0;
-        }
-        nextSecCheck = curTime.tv_sec + 60;
-    }
-    return lastVal;
-}
-
-int get_freq(void)
-{
-    static int lastValf = -1;
-    static time_t nextSecCheckf = 0;
-
-    struct timeval curTime;
-    gettimeofday(&curTime, NULL);
-    if (curTime.tv_sec > nextSecCheckf)
-    {
-        char freq_s[9];
-        FILE * freq = fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq","rt");
-        if (freq)
-        {
-            fgets(freq_s, 9, freq);
-            fclose(freq);
-            lastValf = atoi(freq_s)/1000;
-        }
-        nextSecCheckf = curTime.tv_sec + 1;
-    }
-    return lastValf;
-}
-char* 
-print_batt_cap()  {
-	char* full_cap_s = (char*)malloc(40);
-	char full_cap_a[40];
-	
-	int cap_i = get_battery_level();
-        int ft_i = get_battery_temp();
-
-	// Get a usable time
-	struct tm *current;
-	time_t now;
-	now = time(0);
-	current = localtime(&now);
-	
-	sprintf(full_cap_a, "Battery Status: Level:%i%% Temp:%iC @ %02D:%02D", cap_i, ft_i, current->tm_hour, current->tm_min);
-	strcpy(full_cap_s, full_cap_a);
-	
-	return full_cap_s;
-}
-
-char* 
-print_freq()  {
-	char* full_freq_s = (char*)malloc(50);
-	char full_freq_a[50];
-	
-	int freq_i = get_freq();
-	
-	sprintf(full_freq_a, "Current Freq: %i Mhz", freq_i);
-	strcpy(full_freq_s, full_freq_a);
-	
-	return full_freq_s;
-}
-
 static char**
 prepend_title(char** headers) {
     char* title[] = { EXPAND(RECOVERY_VERSION),
-                      print_freq(),
-                      print_batt_cap(),
+                      "",
                       NULL };
 
     // count the number of lines in our title, plus the
@@ -569,16 +467,16 @@ get_menu_selection(char** headers, char** items, int menu_only,
     int wrap_count = 0;
 
     while (chosen_item < 0 && chosen_item != GO_BACK) {
-    struct keyStruct *key;
-    key = ui_wait_key();
+		struct keyStruct *key;
+		key = ui_wait_key();
 
         int visible = ui_text_visible();
 
-    int action;
-    if(key->code == ABS_MT_POSITION_X)
-          action = device_handle_mouse(key, visible);
-    else
-          action = device_handle_key(key->code, visible);
+		int action;
+		if(key->code == ABS_MT_POSITION_X)
+	        action = device_handle_mouse(key, visible);
+		else
+	        action = device_handle_key(key->code, visible);
 
         int old_selected = selected;
 
@@ -1081,4 +979,3 @@ main(int argc, char **argv) {
 int get_allow_toggle_display() {
     return allow_display_toggle;
 }
-

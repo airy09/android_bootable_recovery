@@ -50,7 +50,11 @@ static int gShowBackButton = 1;
 #endif
 
 #define MAX_COLS 96
-#define MAX_ROWS 32
+//#define MAX_ROWS 32
+#define MAX_ROWS 25
+
+//new strings
+#define MIN_LOG_ROWS 5
 
 #define MENU_MAX_COLS 64
 #define MENU_MAX_ROWS 250
@@ -240,6 +244,14 @@ static void draw_screen_locked(void)
 {
     if (!ui_has_initialized) return;
 
+//add new strings
+//define menu color integers
+   char cRv;
+   char cGv;
+    char cBv;
+    //define menu highlight text color
+    char txt;
+
 //ToDo: Following structure should be global
 	struct { int x; int y; int xL; int xR; } MENU_ICON[] = {
 		{  get_menu_icon_info(MENU_BACK,MENU_ICON_X),	get_menu_icon_info(MENU_BACK,MENU_ICON_Y), get_menu_icon_info(MENU_BACK,MENU_ICON_XL), get_menu_icon_info(MENU_BACK,MENU_ICON_XR) },
@@ -247,7 +259,19 @@ static void draw_screen_locked(void)
 		{  get_menu_icon_info(MENU_UP,MENU_ICON_X),	get_menu_icon_info(MENU_UP,MENU_ICON_Y), get_menu_icon_info(MENU_UP,MENU_ICON_XL), get_menu_icon_info(MENU_UP,MENU_ICON_XR) },
 		{  get_menu_icon_info(MENU_SELECT,MENU_ICON_X),	get_menu_icon_info(MENU_SELECT,MENU_ICON_Y), get_menu_icon_info(MENU_SELECT,MENU_ICON_XL), get_menu_icon_info(MENU_SELECT,MENU_ICON_XR) },
 	};
+	
+	//new strings
+		cRv = rand() % 255;
+	    	cGv = rand() % 255;
+    		cBv = rand() % 255;
+    		if ( cGv >= 150) {
+       			txt = 0;
+    		} else {
+       			txt = 255;
+    		}
 
+		//end new strings
+		
     draw_background_locked(gCurrentIcon);
     draw_progress_locked();
 
@@ -265,6 +289,10 @@ static void draw_screen_locked(void)
 			draw_icon_locked(gMenuIcon[MENU_UP], MENU_ICON[MENU_UP].x, MENU_ICON[MENU_UP].y );
 			draw_icon_locked(gMenuIcon[MENU_SELECT], MENU_ICON[MENU_SELECT].x, MENU_ICON[MENU_SELECT].y );
             gr_color(MENU_TEXT_COLOR);
+            //new strings
+            //gr_color(cRv,cGv,cBv,255);
+            //end new strings
+            
             gr_fill(0, (menu_top + menu_sel - menu_show_start) * CHAR_HEIGHT,
                     gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*CHAR_HEIGHT+1);
 
@@ -279,14 +307,20 @@ static void draw_screen_locked(void)
             else
                 j = menu_items - menu_show_start;
 
-            gr_color(MENU_TEXT_COLOR);
+		gr_color(MENU_TEXT_COLOR);
+	//new string
+            //gr_color(cRv,cGv,cBv,255);
+            
+            //end new string
             for (i = menu_show_start + menu_top; i < (menu_show_start + menu_top + j); ++i) {
                 if (i == menu_top + menu_sel) {
                     gr_color(255, 255, 255, 255);
+                    //gr_color(txt,txt,txt,255);
                     draw_text_line(i - menu_show_start , menu[i]);
                     gr_color(MENU_TEXT_COLOR);
                 } else {
                     gr_color(MENU_TEXT_COLOR);
+                    //gr_color(cRv,cGv,cBv,255);
                     draw_text_line(i - menu_show_start, menu[i]);
                 }
                 row++;
